@@ -1,0 +1,354 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  passwordHash  String?
+  name          String?
+  avatarUrl     String?
+  googleId      String?  @unique
+  role          Role     @default(USER)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  files            File[]
+  conversions      Conversion[]
+  subscription     Subscription?
+  apiKeys          ApiKey[]
+  usageLogs        UsageLog[]
+  invoices         Invoice[]
+  teamMemberships  TeamMember[]
+  conversionTemplates ConversionTemplate[]
+
+  @@index([email])
+  @@index([googleId])
+}
+
+enum Role {
+  USER
+  ADMIN
+  ENTERPRISE
+}
+
+model File {
+  id            String     @id @default(cuid())
+  userId        String?
+  sessionId     String?
+  originalName  String
+  storagePath   String
+  mimeType      String
+  size          BigInt
+  format        String
+  category      String
+  status        FileStatus @default(UPLOADED)
+  isPublic      Boolean    @default(false)
+  checksum      String?
+  width         Int?
+  height        Int?
+  duration      Float?
+  pages         Int?
+  thumbnailPath String?
+  metadata      Json?
+  expiresAt     DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  user        User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversions Conversion[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([sessionId, status])
+}
+
+enum FileStatus {
+  UPLOADING
+  UPLOADED
+  PROCESSING
+  READY
+  ERROR
+  DELETED
+}
+
+model Conversion {
+  id           String           @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  fileId       String
+  inputFormat  String
+  outputFormat String
+  options      Json?
+  status       ConversionStatus @default(PENDING)
+  progress     Int              @default(0)
+  priority     Int              @default(0)
+  error        String?
+  outputFileId String?
+  outputSize   BigInt?
+  outputPath   String?
+  creditsCost  Int              @default(1)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user       User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inputFile  File  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  jobLogs    JobLog[]
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([sessionId, status])
+  @@index([createdAt])
+  @@index([fileId])
+}
+
+enum ConversionStatus {
+  PENDING
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model ConversionTemplate {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  inputFormat  String
+  outputFormat String
+  options      Json?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model JobLog {
+  id           String   @id @default(cuid())
+  conversionId String
+  workerId     String?
+  stage        String?
+  message      String?
+  progress     Int?
+  duration     Int?
+  metadata     Json?
+  level        String   @default("info")
+  timestamp    DateTime @default(now())
+
+  conversion Conversion @relation(fields: [conversionId], references: [id], onDelete: Cascade)
+
+  @@index([conversionId])
+  @@index([timestamp])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  planId               String
+  tier                 SubscriptionTier   @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime           @default(now())
+  currentPeriodEnd     DateTime
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?            @unique
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEnd             DateTime?
+  dailyConversionLimit Int                @default(10)
+  maxFileSize          BigInt             @default(104857600)
+  storageLimit         BigInt             @default(500000000)
+  priority             Int                @default(0)
+  apiAccess            Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeCustomerId])
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  PAST_DUE
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  key        String    @unique
+  isActive   Boolean   @default(true)
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
+}
+
+model UsageLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String
+  resource     String?
+  resourceId   String?
+  metadata     Json?
+  ip           String?
+  userAgent    String?
+  creditsCost  Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([action])
+}
+
+model DailyUsage {
+  id            String   @id @default(cuid())
+  userId        String
+  date          DateTime
+  conversions   Int      @default(0)
+  bytesUploaded BigInt   @default(0)
+  creditsUsed   Int      @default(0)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@index([date])
+}
+
+model Invoice {
+  id                 String   @id @default(cuid())
+  userId             String
+  subscriptionId     String?
+  amount             Int
+  currency           String   @default("usd")
+  status             InvoiceStatus @default(UNPAID)
+  stripeInvoiceId    String?  @unique
+  stripeInvoiceUrl   String?
+  periodStart        DateTime
+  periodEnd          DateTime
+  paidAt             DateTime?
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([stripeInvoiceId])
+}
+
+enum InvoiceStatus {
+  PAID
+  UNPAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members TeamMember[]
+
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id       String          @id @default(cuid())
+  teamId   String
+  userId   String
+  role     TeamMemberRole  @default(MEMBER)
+  joinedAt DateTime        @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+enum TeamMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model ChunkUpload {
+  id              String   @id @default(cuid())
+  userId          String
+  fileName        String
+  fileSize        BigInt
+  chunkSize       Int
+  totalChunks     Int
+  completedChunks Json     @default("[]")
+  status          String   @default("INITIATED")
+  mimeType        String?
+  createdAt       DateTime @default(now())
+  expiresAt       DateTime
+
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  userId    String
+  url       String
+  secret    String
+  events    Json
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model WebhookLog {
+  id         String   @id @default(cuid())
+  endpointId String
+  event      String
+  payload    Json
+  statusCode Int?
+  response   String?
+  success    Boolean
+  createdAt  DateTime @default(now())
+
+  @@index([endpointId])
+  @@index([createdAt])
+}

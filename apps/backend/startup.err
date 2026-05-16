@@ -1,0 +1,12 @@
+[31m[Nest] 6568  - [39m16/05/2026, 3:15:34 am [31m  ERROR[39m [38;5;3m[ExceptionHandler] [39m[31mOAuth2Strategy requires a clientID option[39m
+TypeError: OAuth2Strategy requires a clientID option
+    at GoogleStrategy.OAuth2Strategy (E:\converter-tool\node_modules\.pnpm\passport-oauth2@1.8.0\node_modules\passport-oauth2\lib\strategy.js:87:34)
+    at new Strategy (E:\converter-tool\node_modules\.pnpm\passport-google-oauth20@2.0.0\node_modules\passport-google-oauth20\lib\strategy.js:52:18)
+    at new MixinStrategy (E:\converter-tool\node_modules\.pnpm\@nestjs+passport@10.0.3_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_ia6i3gv5hfockxefxn2psg2dxa\node_modules\@nestjs\passport\dist\passport\passport.strategy.js:32:13)
+    at new GoogleStrategy (E:\converter-tool\apps\backend\dist\modules\auth\strategies\google.strategy.js:20:9)
+    at Injector.instantiateClass (E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\injector.js:373:19)
+    at callback (E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\injector.js:65:45)
+    at async Injector.resolveConstructorParams (E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\injector.js:145:24)
+    at async Injector.loadInstance (E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\injector.js:70:13)
+    at async Injector.loadProvider (E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\injector.js:98:9)
+    at async E:\converter-tool\node_modules\.pnpm\@nestjs+core@10.4.22_@nestjs+common@10.4.22_class-transformer@0.5.1_class-validator@0.14.4_re_s3zxsgsmsekta3oeycoqskcmia\node_modules\@nestjs\core\injector\instance-loader.js:56:13

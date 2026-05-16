@@ -1,0 +1,9 @@
+{
+  "name": "@convertforge/config-prettier",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.json",
+  "scripts": {
+    "lint": "echo 'lint ok'"
+  }
+}

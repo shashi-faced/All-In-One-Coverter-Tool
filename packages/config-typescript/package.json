@@ -1,0 +1,8 @@
+{
+  "name": "@convertforge/typescript-config",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "echo 'lint ok'"
+  }
+}
