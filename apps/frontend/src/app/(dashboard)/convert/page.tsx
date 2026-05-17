@@ -70,7 +70,7 @@ const outputMap: Record<string, string[]> = {
 };
 
 function getFileCategoryIcon(format: string) {
-  const upper = format.toUpperCase();
+  const upper = (format || '').toUpperCase();
   if (['PNG', 'JPG', 'JPEG', 'WEBP', 'AVIF', 'GIF', 'SVG', 'BMP'].includes(upper)) return Image;
   if (['PDF', 'DOCX', 'DOC', 'TXT', 'HTML', 'MD'].includes(upper)) return FileText;
   if (['MP3', 'WAV', 'AAC', 'FLAC', 'OGG', 'M4A'].includes(upper)) return Music;

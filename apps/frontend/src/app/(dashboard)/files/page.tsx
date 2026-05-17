@@ -87,7 +87,7 @@ export default function FilesPage() {
   const limit = 12;
   const filteredFiles = files.filter((f) => {
     const matchesSearch = f.originalName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFormat = formatFilter === 'all' || f.format.toUpperCase() === formatFilter.toUpperCase();
+    const matchesFormat = formatFilter === 'all' || (f.format || '').toUpperCase() === formatFilter.toUpperCase();
     return matchesSearch && matchesFormat;
   });
   const totalPages = Math.ceil(filteredFiles.length / limit);
@@ -117,7 +117,7 @@ export default function FilesPage() {
     }
   };
 
-  const formatOptions = ['all', ...new Set(files.map((f) => f.format.toUpperCase()))];
+  const formatOptions = ['all', ...new Set(files.map((f) => (f.format || '').toUpperCase()))];
 
   if (loading) {
     return (
@@ -261,7 +261,7 @@ export default function FilesPage() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div className="rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10 p-2.5">
-                            {getFileTypeIcon(file.format)}
+                            {getFileTypeIcon(file.format || '')}
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -299,7 +299,7 @@ export default function FilesPage() {
                         <p className="text-sm font-medium truncate">{file.originalName}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            .{file.format.toLowerCase()}
+                            .{(file.format || '').toLowerCase()}
                           </Badge>
                           <span className="text-xs text-muted-foreground">{formatBytes(file.size)}</span>
                         </div>
@@ -331,7 +331,7 @@ export default function FilesPage() {
                     className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors group"
                   >
                     <div className="rounded-lg bg-gradient-to-br from-primary/10 to-purple-500/10 p-2 shrink-0">
-                      {getFileTypeIcon(file.format, 'h-5 w-5')}
+                      {getFileTypeIcon(file.format || '', 'h-5 w-5')}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.originalName}</p>
@@ -339,7 +339,7 @@ export default function FilesPage() {
                         <span>{formatBytes(file.size)}</span>
                         <span>·</span>
                         <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          .{file.format.toLowerCase()}
+                          .{(file.format || '').toLowerCase()}
                         </Badge>
                         <span>·</span>
                         <span>{formatDate(file.createdAt)}</span>
