@@ -2,7 +2,7 @@ import { Job } from 'bullmq';
 import * as path from 'path';
 import * as fs from 'fs';
 import { Logger } from '../utils/logger';
-import { updateConversionStatus } from '../utils/db';
+import { updateConversionStatus, prisma } from '../utils/db';
 import { emitProgress } from '../utils/ws';
 
 const logger = new Logger('ConversionProcessor');
@@ -109,11 +109,40 @@ export async function processConversion(
     const outputSize = fs.statSync(outputPath).size;
     onProgress(100, { outputPath, outputSize });
 
+    const relativeDestPath = `uploads/${jobId}-${outputFileName}`;
+    const finalDestPath = path.join(process.cwd(), relativeDestPath);
+    fs.mkdirSync(path.dirname(finalDestPath), { recursive: true });
+    fs.copyFileSync(outputPath, finalDestPath);
+
+    await prisma.conversion.update({
+      where: { id: jobId },
+      data: {
+        status: 'COMPLETED',
+        progress: 100,
+        outputPath: relativeDestPath,
+        outputSize: BigInt(outputSize),
+        completedAt: new Date(),
+      },
+    });
+
     emitProgress(jobId, userId, { progress: 100, stage: 'completed', message: 'Conversion completed' });
 
-    return { outputPath, outputSize, outputFileName };
+    return { outputPath: relativeDestPath, outputSize, outputFileName };
   } catch (error: any) {
     logger.error(`Conversion failed: ${error.message}`);
+    
+    await prisma.conversion.update({
+      where: { id: jobId },
+      data: {
+        status: 'FAILED',
+        progress: 0,
+        error: error.message,
+        completedAt: new Date(),
+      },
+    }).catch((err) => {
+      logger.error(`Failed to update conversion failure state in DB: ${err.message}`);
+    });
+
     emitProgress(jobId, userId, { progress: 0, stage: 'failed', message: error.message });
     throw error;
   } finally {

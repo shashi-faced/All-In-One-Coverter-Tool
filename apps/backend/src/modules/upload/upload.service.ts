@@ -47,6 +47,13 @@ export class UploadService {
       },
     });
 
+    const ext = path.extname(fileName).toLowerCase();
+    const storagePath = `uploads/${file.id}${ext}`;
+    await this.prisma.file.update({
+      where: { id: file.id },
+      data: { storagePath },
+    });
+
     if (fileSize > this.chunkSize * 2) {
       const totalChunks = Math.ceil(fileSize / this.chunkSize);
       const chunkUpload = await this.prisma.chunkUpload.create({
@@ -77,7 +84,7 @@ export class UploadService {
       };
     }
 
-    const uploadUrl = this.storage.getUploadUrl(`uploads/${file.id}${ext}`, 3600);
+    const uploadUrl = this.storage.getUploadUrl(storagePath, 3600);
 
     return {
       id: file.id,
@@ -95,10 +102,13 @@ export class UploadService {
       throw new BadRequestException('Invalid chunk upload');
     }
 
+    const ext = path.extname(chunkUpload.fileName).toLowerCase();
+    const storagePath = `uploads/${fileId}${ext}`;
+
     await this.storage.mergeChunks(
       `chunks/${uploadId}`,
       chunkUpload.totalChunks,
-      `uploads/${fileId}`,
+      storagePath,
     );
 
     await this.prisma.chunkUpload.update({
@@ -108,7 +118,7 @@ export class UploadService {
 
     await this.prisma.file.update({
       where: { id: fileId },
-      data: { status: 'UPLOADED' },
+      data: { status: 'UPLOADED', storagePath },
     });
 
     return { message: 'Upload completed' };

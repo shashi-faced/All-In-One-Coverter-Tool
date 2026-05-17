@@ -58,6 +58,15 @@ export class ConversionGateway implements OnGatewayConnection, OnGatewayDisconne
     return { event: 'subscribed', data: { conversionId: data.conversionId } };
   }
 
+  @SubscribeMessage('job:progress')
+  handleJobProgress(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { conversionId: string; userId: string; progress: number; stage: string; message: string; eta?: number },
+  ) {
+    this.logger.log(`Received job:progress for ${data.conversionId}: ${data.progress}%`);
+    this.sendJobProgress(data.conversionId, data.userId, data);
+  }
+
   sendJobProgress(conversionId: string, userId: string, data: {
     progress: number;
     stage: string;
