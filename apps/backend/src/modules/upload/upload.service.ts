@@ -46,8 +46,6 @@ export class UploadService {
         checksum: crypto.randomUUID(),
       },
     });
-
-    const ext = path.extname(fileName).toLowerCase();
     const storagePath = `uploads/${file.id}${ext}`;
     await this.prisma.file.update({
       where: { id: file.id },
