@@ -17,3 +17,7 @@ tmp/
 *.pid
 docker-data/
 dump.rdb
+tmp-deploy/
+sample_image.png
+test_image.png
+
