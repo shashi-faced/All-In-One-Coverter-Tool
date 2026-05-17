@@ -44,7 +44,8 @@ class LocalStorageProvider implements StorageProvider {
   }
 
   getSignedUrl(key: string, _expiresIn: number): string {
-    return `/api/v1/storage/download/${encodeURIComponent(key)}`;
+    const apiUrl = process.env.API_URL || 'http://localhost:4000';
+    return `${apiUrl.replace(/\/$/, '')}/api/v1/storage/download/${encodeURIComponent(key)}`;
   }
 
   async mergeChunks(prefix: string, totalChunks: number, destination: string): Promise<void> {

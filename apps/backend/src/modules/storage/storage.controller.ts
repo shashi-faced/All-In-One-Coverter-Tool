@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Param, Res, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
 import { StorageService } from './storage.service';
@@ -20,5 +20,28 @@ export class StorageController {
       'Content-Length': buffer.length,
     });
     res.send(buffer);
+  }
+
+  @Put('download/:key')
+  @Public()
+  @ApiOperation({ summary: 'Upload file by storage key (Local storage mock)' })
+  async uploadFile(
+    @Param('key') key: string,
+    @Req() req: any,
+  ) {
+    let buffer: Buffer;
+    if (Buffer.isBuffer(req.body)) {
+      buffer = req.body;
+    } else if (req.body instanceof Uint8Array) {
+      buffer = Buffer.from(req.body);
+    } else {
+      const chunks: Buffer[] = [];
+      for await (const chunk of req) {
+        chunks.push(chunk as Buffer);
+      }
+      buffer = Buffer.concat(chunks);
+    }
+    await this.storageService.uploadBuffer(decodeURIComponent(key), buffer);
+    return { success: true };
   }
 }
