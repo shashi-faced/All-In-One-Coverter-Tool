@@ -16,3 +16,4 @@ downloads/
 tmp/
 *.pid
 docker-data/
+dump.rdb

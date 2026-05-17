@@ -1,8 +1,8 @@
 #!/usr/bin/env pwsh
 # ConvertForge Development Startup Script
-Write-Output "╔══════════════════════════════════════╗"
-Write-Output "║     ConvertForge - Dev Startup        ║"
-Write-Output "╚══════════════════════════════════════╝"
+Write-Output "+--------------------------------------+"
+Write-Output "|     ConvertForge - Dev Startup       |"
+Write-Output "+--------------------------------------+"
 Write-Output ""
 
 # Configuration
@@ -95,15 +95,15 @@ if ($frontendRunning) { Write-Output "  ✅ Frontend running on http://localhost
 else { Write-Output "  ⏳ Waiting for frontend..." }
 
 Write-Output ""
-Write-Output "╔══════════════════════════════════════╗"
-Write-Output "║  ConvertForge is starting up!         ║"
-Write-Output "║                                       ║"
-Write-Output "║  Frontend:  http://localhost:3000     ║"
-Write-Output "║  Backend:   http://localhost:4000     ║"
-Write-Output "║  API Docs:  http://localhost:4000/api/docs ║"
-Write-Output "║                                       ║"
-Write-Output "║  Demo:  demo@convertforge.app         ║"
-Write-Output "║  Admin: admin@convertforge.app        ║"
-Write-Output "╚══════════════════════════════════════╝"
+Write-Output "+--------------------------------------+"
+Write-Output "|  ConvertForge is starting up!        |"
+Write-Output "|                                      |"
+Write-Output "|  Frontend:  http://localhost:3000    |"
+Write-Output "|  Backend:   http://localhost:4000    |"
+Write-Output "|  API Docs:  http://localhost:4000/api/docs |"
+Write-Output "|                                      |"
+Write-Output "|  Demo:  demo@convertforge.app        |"
+Write-Output "|  Admin: admin@convertforge.app       |"
+Write-Output "+--------------------------------------+"
 Write-Output ""
-Write-Output "Use 'Stop-Job convertforge-backend' and 'Stop-Job convertforge-frontend' to stop."
+Write-Output "Use Stop-Job convertforge-backend and Stop-Job convertforge-frontend to stop."
