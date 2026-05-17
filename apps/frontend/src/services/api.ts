@@ -10,8 +10,9 @@ import type {
   PaginationParams,
 } from '@convertforge/shared-types';
 
+const baseUrlVal = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+  baseURL: baseUrlVal.endsWith('/v1') ? baseUrlVal : `${baseUrlVal.replace(/\/$/, '')}/v1`,
   timeout: 30000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -69,7 +70,7 @@ api.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (refreshToken) {
         try {
-          const { data } = await api.post('/v1/auth/refresh', { refreshToken });
+          const { data } = await api.post('auth/refresh', { refreshToken });
           const newToken = data.data.accessToken;
           localStorage.setItem('auth_token', newToken);
           localStorage.setItem('refresh_token', data.data.refreshToken);
@@ -111,50 +112,50 @@ async function handleResponse<T>(promise: Promise<{ data: ApiResponse<T> }>): Pr
 export const authApi = {
   login: (email: string, password: string) =>
     handleResponse<{ user: UserProfile; accessToken: string; refreshToken: string }>(
-      api.post('/v1/auth/login', { email, password }),
+      api.post('auth/login', { email, password }),
     ),
 
   register: (name: string, email: string, password: string) =>
     handleResponse<{ user: UserProfile; accessToken: string; refreshToken: string }>(
-      api.post('/v1/auth/register', { name, email, password }),
+      api.post('auth/register', { name, email, password }),
     ),
 
   requestOtp: (email: string) =>
-    handleResponse<{ message: string }>(api.post('/v1/auth/otp/send', { email })),
+    handleResponse<{ message: string }>(api.post('auth/otp/send', { email })),
 
   verifyOtp: (email: string, otp: string, name?: string) =>
     handleResponse<{ user: UserProfile; accessToken: string; refreshToken: string }>(
-      api.post('/v1/auth/otp/verify', { email, otp, name }),
+      api.post('auth/otp/verify', { email, otp, name }),
     ),
 
-  getMe: () => handleResponse<UserProfile>(api.get('/v1/auth/me')),
+  getMe: () => handleResponse<UserProfile>(api.get('auth/me')),
 
   refreshToken: (refreshToken: string) =>
     handleResponse<{ accessToken: string; refreshToken: string }>(
-      api.post('/v1/auth/refresh', { refreshToken }),
+      api.post('auth/refresh', { refreshToken }),
     ),
 
   updateProfile: (data: Partial<UserProfile>) =>
-    handleResponse<UserProfile>(api.patch('/v1/user/profile', data)),
+    handleResponse<UserProfile>(api.patch('user/profile', data)),
 };
 
 export const filesApi = {
   getFiles: (params?: PaginationParams & { search?: string; format?: string; status?: string }) =>
     handleResponse<{ items: FileMeta[]; total: number; totalPages: number }>(
-      api.get('/v1/upload/files', { params }),
+      api.get('upload/files', { params }),
     ),
 
-  getFile: (id: string) => handleResponse<FileMeta>(api.get(`/v1/upload/${id}`)),
+  getFile: (id: string) => handleResponse<FileMeta>(api.get(`upload/${id}`)),
 
-  deleteFile: (id: string) => handleResponse<void>(api.delete(`/v1/upload/files/${id}`)),
+  deleteFile: (id: string) => handleResponse<void>(api.delete(`upload/files/${id}`)),
 
   initiateUpload: (fileName: string, fileSize: number, mimeType: string) =>
     handleResponse<{ id: string; uploadUrl?: string; uploadMethod: 'PUT' | 'CHUNKED'; chunkUpload?: any }>(
-      api.post('/v1/upload/initiate', { fileName, fileSize, mimeType }),
+      api.post('upload/initiate', { fileName, fileSize, mimeType }),
     ),
 
   completeChunkedUpload: (fileId: string, uploadId: string) =>
-    handleResponse<{ message: string }>(api.post(`/v1/upload/complete/${uploadId}`, { fileId })),
+    handleResponse<{ message: string }>(api.post(`upload/complete/${uploadId}`, { fileId })),
 
   uploadToUrl: async (uploadUrl: string, file: File | Blob, headers?: Record<string, string>) => {
     await axios.put(uploadUrl, file, {
@@ -172,43 +173,43 @@ export const filesApi = {
 export const conversionsApi = {
   createConversion: (fileId: string, outputFormat: string, options?: Record<string, unknown>) =>
     handleResponse<{ id: string; status: string; jobId: string }>(
-      api.post('/v1/convert', { fileId, outputFormat, options }),
+      api.post('convert', { fileId, outputFormat, options }),
     ),
 
   getConversions: (params?: PaginationParams) =>
     handleResponse<{ items: ConversionJob[]; total: number; totalPages: number }>(
-      api.get('/v1/convert/history', { params }),
+      api.get('convert/history', { params }),
     ),
 
   getConversion: (id: string) =>
-    handleResponse<ConversionJob>(api.get(`/v1/convert/${id}`)),
+    handleResponse<ConversionJob>(api.get(`convert/${id}`)),
 
   cancelConversion: (id: string) =>
-    handleResponse<{ message: string }>(api.delete(`/v1/convert/${id}`)),
+    handleResponse<{ message: string }>(api.delete(`convert/${id}`)),
 
   getFormats: () =>
-    handleResponse<{ input: string; outputs: string[] }[]>(api.get('/v1/convert/formats')),
+    handleResponse<{ input: string; outputs: string[] }[]>(api.get('convert/formats')),
 };
 
 export const usageApi = {
-  getUsage: () => handleResponse<UserUsage>(api.get('/v1/user/usage')),
+  getUsage: () => handleResponse<UserUsage>(api.get('user/usage')),
 };
 
 export const apiKeysApi = {
-  getApiKeys: () => handleResponse<ApiKey[]>(api.get('/v1/api-keys')),
+  getApiKeys: () => handleResponse<ApiKey[]>(api.get('api-keys')),
   createApiKey: (name: string, expiresInDays?: number) =>
-    handleResponse<ApiKey>(api.post('/v1/api-keys', { name, expiresInDays })),
-  revokeApiKey: (id: string) => handleResponse<void>(api.post(`/v1/api-keys/${id}/revoke`)),
-  deleteApiKey: (id: string) => handleResponse<void>(api.delete(`/v1/api-keys/${id}`)),
+    handleResponse<ApiKey>(api.post('api-keys', { name, expiresInDays })),
+  revokeApiKey: (id: string) => handleResponse<void>(api.post(`api-keys/${id}/revoke`)),
+  deleteApiKey: (id: string) => handleResponse<void>(api.delete(`api-keys/${id}`)),
 };
 
 export const billingApi = {
-  getPlans: () => handleResponse<any[]>(api.get('/v1/billing/plans')),
-  getSubscription: () => handleResponse<any>(api.get('/v1/billing/subscription')),
+  getPlans: () => handleResponse<any[]>(api.get('billing/plans')),
+  getSubscription: () => handleResponse<any>(api.get('billing/subscription')),
   createCheckoutSession: (planId: string) =>
-    handleResponse<{ url: string; sessionId: string }>(api.post('/v1/billing/checkout', { planId })),
+    handleResponse<{ url: string; sessionId: string }>(api.post('billing/checkout', { planId })),
   createPortalSession: () =>
-    handleResponse<{ url: string }>(api.post('/v1/billing/portal')),
+    handleResponse<{ url: string }>(api.post('billing/portal')),
 };
 
 export default api;
