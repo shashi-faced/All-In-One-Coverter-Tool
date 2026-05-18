@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axios from 'axios';
+import { authApi } from '@/services/api';
 import { User, Mail, Lock, ArrowRight, Loader2, ChromeIcon, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,14 +38,12 @@ export default function RegisterPage() {
   const onSubmit = (data: RegisterForm) => {
     startTransition(async () => {
       try {
-        await axios.post('/api/auth/register', {
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        });
-        router.push('/login');
-      } catch {
-        form.setError('root', { message: 'Registration failed. Email may already be in use.' });
+        const res = await authApi.register(data.name, data.email, data.password);
+        localStorage.setItem('auth_token', res.accessToken);
+        localStorage.setItem('refresh_token', res.refreshToken);
+        router.push('/dashboard');
+      } catch (err: any) {
+        form.setError('root', { message: err.message || 'Registration failed. Email may already be in use.' });
       }
     });
   };

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import axios from 'axios';
+import { authApi } from '@/services/api';
 import { Mail, Lock, ArrowRight, Loader2, ChromeIcon, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -48,10 +48,12 @@ export default function LoginPage() {
   const onLogin = (data: LoginForm) => {
     startTransition(async () => {
       try {
-        await axios.post('/api/auth/login', data);
+        const res = await authApi.login(data.email, data.password);
+        localStorage.setItem('auth_token', res.accessToken);
+        localStorage.setItem('refresh_token', res.refreshToken);
         router.push('/dashboard');
-      } catch {
-        loginForm.setError('root', { message: 'Invalid email or password.' });
+      } catch (err: any) {
+        loginForm.setError('root', { message: err.message || 'Invalid email or password.' });
       }
     });
   };
@@ -60,11 +62,11 @@ export default function LoginPage() {
     setEmail(data.email);
     startTransition(async () => {
       try {
-        await axios.post('/api/auth/otp/request', { email: data.email });
+        await authApi.requestOtp(data.email);
         setStep('otp-verify');
         verifyOtpForm.setValue('email', data.email);
-      } catch {
-        otpForm.setError('root', { message: 'Failed to send OTP.' });
+      } catch (err: any) {
+        otpForm.setError('root', { message: err.message || 'Failed to send OTP.' });
       }
     });
   };
@@ -72,10 +74,12 @@ export default function LoginPage() {
   const onVerifyOtp = (data: VerifyOtpForm) => {
     startTransition(async () => {
       try {
-        await axios.post('/api/auth/otp/verify', data);
+        const res = await authApi.verifyOtp(data.email, data.otp);
+        localStorage.setItem('auth_token', res.accessToken);
+        localStorage.setItem('refresh_token', res.refreshToken);
         router.push('/dashboard');
-      } catch {
-        verifyOtpForm.setError('root', { message: 'Invalid or expired OTP.' });
+      } catch (err: any) {
+        verifyOtpForm.setError('root', { message: err.message || 'Invalid or expired OTP.' });
       }
     });
   };
