@@ -14,6 +14,7 @@ import {
   Key,
   CreditCard,
   Settings,
+  Code,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,7 @@ const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Convert', href: '/convert', icon: ArrowLeftRight },
   { label: 'My Files', href: '/files', icon: Files },
-  { label: 'API Keys', href: '/api-keys', icon: Key },
+  { label: 'Developer Portal', href: '/developer', icon: Code },
   { label: 'Billing', href: '/billing', icon: CreditCard, badge: 'PRO' },
   { label: 'Settings', href: '/settings', icon: Settings },
 ];

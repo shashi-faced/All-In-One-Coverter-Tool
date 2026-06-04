@@ -27,90 +27,23 @@ export async function processConversion(
     await updateConversionStatus(jobId, 'PROCESSING', 0);
     emitProgress(jobId, userId, { progress: 0, stage: 'starting', message: 'Starting conversion...' });
 
-    switch (inputFormat.toLowerCase()) {
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'webp':
-      case 'avif':
-      case 'gif':
-      case 'bmp':
-      case 'tiff':
-      case 'svg':
-      case 'ico':
-      case 'heic':
-      case 'psd':
-        await convertImage(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
+    const basePath = process.env.LOCAL_STORAGE_PATH 
+      ? path.resolve(process.env.LOCAL_STORAGE_PATH) 
+      : path.resolve(__dirname, '../../../../backend');
 
-      case 'mp4':
-      case 'mov':
-      case 'avi':
-      case 'mkv':
-      case 'webm':
-      case 'flv':
-      case 'wmv':
-      case 'm4v':
-        await convertVideo(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      case 'mp3':
-      case 'wav':
-      case 'aac':
-      case 'flac':
-      case 'ogg':
-      case 'm4a':
-        await convertAudio(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      case 'pdf':
-      case 'docx':
-      case 'doc':
-      case 'pptx':
-      case 'ppt':
-      case 'xlsx':
-      case 'xls':
-      case 'txt':
-      case 'html':
-      case 'md':
-      case 'odt':
-      case 'rtf':
-      case 'epub':
-      case 'mobi':
-      case 'azw3':
-        await convertDocument(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      case 'zip':
-      case 'rar':
-      case '7z':
-      case 'tar':
-      case 'gz':
-        await convertArchive(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      case 'ttf':
-      case 'otf':
-      case 'woff':
-      case 'woff2':
-        await convertFont(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      case 'dxf':
-      case 'dwg':
-      case 'stl':
-        await convertCad(inputPath, outputPath, inputFormat, outputFormat.toLowerCase(), options, onProgress);
-        break;
-
-      default:
-        throw new Error(`Unsupported input format: ${inputFormat}`);
+    let absoluteInputPath = inputPath;
+    if (!path.isAbsolute(inputPath)) {
+      absoluteInputPath = path.join(basePath, inputPath);
     }
+
+    const { scrapeConvert } = require('../utils/scraper');
+    await scrapeConvert(absoluteInputPath, outputPath, inputFormat, outputFormat, onProgress);
 
     const outputSize = fs.statSync(outputPath).size;
     onProgress(100, { outputPath, outputSize });
 
     const relativeDestPath = `uploads/${jobId}-${outputFileName}`;
-    const finalDestPath = path.join(process.cwd(), relativeDestPath);
+    const finalDestPath = path.join(basePath, relativeDestPath);
     fs.mkdirSync(path.dirname(finalDestPath), { recursive: true });
     fs.copyFileSync(outputPath, finalDestPath);
 
@@ -139,7 +72,7 @@ export async function processConversion(
         error: error.message,
         completedAt: new Date(),
       },
-    }).catch((err) => {
+    }).catch((err: any) => {
       logger.error(`Failed to update conversion failure state in DB: ${err.message}`);
     });
 

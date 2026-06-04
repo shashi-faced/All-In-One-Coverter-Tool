@@ -18,6 +18,8 @@ import { UsageModule } from './modules/usage/usage.module';
 import { HealthModule } from './modules/health/health.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import configuration from './config/configuration';
+import { ApiKeyGuard } from './common/guards/api-key.guard';
+
 
 @Module({
   imports: [
@@ -74,6 +76,10 @@ import configuration from './config/configuration';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
     },
   ],
 })

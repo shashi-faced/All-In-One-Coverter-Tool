@@ -55,6 +55,7 @@ export interface ConversionJob {
   completedAt?: string;
   fileSize: number;
   outputSize?: number;
+  outputPath?: string | null;
 }
 
 export interface ConversionTemplate {

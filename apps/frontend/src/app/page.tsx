@@ -6,7 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import {
   Upload, X, File, ArrowLeftRight, Play, CheckCircle2,
   AlertCircle, Loader2, Clock, Image, FileText, Music, Video, Archive,
-  Zap, ChevronDown, ChevronRight,
+  Zap, ChevronDown, ChevronRight, Download,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ interface ConversionJob {
   progress: number;
   createdAt: string;
   originalName?: string;
+  outputPath?: string | null;
 }
 
 const CATEGORIES = [
@@ -56,6 +57,44 @@ export default function HomePage() {
       setSupportedFormats(map);
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const activeJobs = jobs.filter((j) => ['PENDING', 'QUEUED', 'PROCESSING'].includes(j.status));
+    if (activeJobs.length === 0) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const updatedJobs = await Promise.all(
+          jobs.map(async (job) => {
+            if (['PENDING', 'QUEUED', 'PROCESSING'].includes(job.status)) {
+              try {
+                const res = await conversionsApi.getConversion(job.id);
+                return {
+                  ...job,
+                  status: res.status as any,
+                  progress: res.progress,
+                  outputPath: res.outputPath,
+                };
+              } catch (err) {
+                console.error(`Failed to poll status for job ${job.id}:`, err);
+                return job;
+              }
+            }
+            return job;
+          })
+        );
+        const hasChanged = JSON.stringify(updatedJobs.map(j => ({ id: j.id, status: j.status, progress: j.progress, outputPath: j.outputPath }))) !==
+                          JSON.stringify(jobs.map(j => ({ id: j.id, status: j.status, progress: j.progress, outputPath: j.outputPath })));
+        if (hasChanged) {
+          setJobs(updatedJobs);
+        }
+      } catch (err) {
+        console.error('Error polling jobs:', err);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [jobs]);
 
   const onDrop = useCallback((accepted: File[]) => {
     setFiles((prev) => [...prev, ...accepted]);
@@ -282,6 +321,12 @@ export default function HomePage() {
   );
 }
 
+const getDownloadUrl = (outputPath: string) => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+  const apiBase = baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl.replace(/\/$/, '')}/v1`;
+  return `${apiBase}/storage/download/${encodeURIComponent(outputPath)}`;
+};
+
 function JobCard({ job }: { job: ConversionJob }) {
   const getStatusBadge = (status: ConversionStatus) => {
     const map: Record<string, string> = {
@@ -306,6 +351,24 @@ function JobCard({ job }: { job: ConversionJob }) {
         <Badge variant={getStatusBadge(job.status) as any}>
           {job.status === 'PROCESSING' ? `${job.progress}%` : job.status}
         </Badge>
+        {job.status === 'COMPLETED' && job.outputPath && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex items-center gap-1.5 h-8 px-2.5 text-xs border-primary/30 hover:border-primary hover:bg-primary/5 text-primary"
+            asChild
+          >
+            <a
+              href={getDownloadUrl(job.outputPath)}
+              download
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Download
+            </a>
+          </Button>
+        )}
       </div>
     </div>
   );
