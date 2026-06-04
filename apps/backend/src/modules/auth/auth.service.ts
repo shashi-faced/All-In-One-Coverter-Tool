@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException, Logger } from '@n
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -67,6 +68,46 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user);
     return { user: this.sanitizeUser(user), ...tokens };
+  }
+
+  async loginAndGenerateApiKey(dto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isValid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if an active API key already exists
+    let apiKey = await this.prisma.apiKey.findFirst({
+      where: { userId: user.id, isActive: true },
+    });
+
+    if (!apiKey) {
+      // Create a new one
+      const keyStr = `cf_${crypto.randomBytes(32).toString('hex')}`;
+      apiKey = await this.prisma.apiKey.create({
+        data: {
+          userId: user.id,
+          name: 'Programmatic API Key',
+          key: keyStr,
+        },
+      });
+    }
+
+    return {
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      apiKey: apiKey.key,
+      createdAt: apiKey.createdAt,
+    };
   }
 
   async googleLogin(googleUser: any) {

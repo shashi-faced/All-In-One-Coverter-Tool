@@ -18,6 +18,33 @@ export class DeveloperController {
       },
       endpoints: [
         {
+          name: 'Generate API Key via Login Credentials',
+          method: 'POST',
+          path: '/auth/developer-key',
+          description: 'Authenticate with your user credentials to generate or retrieve your active developer API key programmatically.',
+          headers: {},
+          body: {
+            email: 'Required. String. Registered account email address.',
+            password: 'Required. String. Account password.'
+          },
+          response: {
+            structure: {
+              userId: 'String. The user ID.',
+              email: 'String. User email address.',
+              name: 'String. User name.',
+              apiKey: 'String. The generated/retrieved developer API key.',
+              createdAt: 'String. Timestamp when key was created.'
+            },
+            example: {
+              userId: 'usr_abc123',
+              email: 'developer@example.com',
+              name: 'Jane Developer',
+              apiKey: 'cf_cd8e54e43e3e1a7adf90251c501b685d39fb3a6641960d40921d1eb787040048',
+              createdAt: '2026-06-04T17:08:19.423Z'
+            }
+          }
+        },
+        {
           name: 'Direct File Upload',
           method: 'POST',
           path: '/upload/direct',

@@ -27,6 +27,13 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('developer-key')
+  @Public()
+  @ApiOperation({ summary: 'Login and generate/retrieve developer API key' })
+  async loginAndGenerateApiKey(@Body() dto: LoginDto) {
+    return this.authService.loginAndGenerateApiKey(dto);
+  }
+
   @Post('refresh')
   @Public()
   @ApiOperation({ summary: 'Refresh access token' })
