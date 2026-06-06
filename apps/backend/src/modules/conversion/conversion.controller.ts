@@ -1,13 +1,24 @@
-import { Controller, Post, Get, Delete, Body, Param, Query, Headers, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller, Post, Get, Delete, Body, Param, Query, Headers, Req,
+  UseInterceptors, UploadedFile, Res, BadRequestException, RequestTimeoutException,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { ConversionService } from './conversion.service';
+import { UploadService } from '../upload/upload.service';
+import { StorageService } from '../storage/storage.service';
 import { Public } from '../../common/decorators/public.decorator';
 
 @ApiTags('Conversion')
 @Public()
 @Controller('convert')
 export class ConversionController {
-  constructor(private conversionService: ConversionService) {}
+  constructor(
+    private conversionService: ConversionService,
+    private uploadService: UploadService,
+    private storageService: StorageService,
+  ) {}
 
   private getUserId(req: any, sessionId: string): string {
     if (req.user && req.user.id) {
@@ -29,6 +40,81 @@ export class ConversionController {
       body.outputFormat.toUpperCase(),
       body.options,
     );
+  }
+
+  @Post('sync')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Synchronously upload, convert, and download file' })
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5368709120 } }))
+  async convertSync(
+    @Req() req: any,
+    @Headers('x-session-id') sessionId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body('outputFormat') outputFormat: string,
+    @Body('options') optionsStr: string,
+    @Res() res: Response,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+    if (!outputFormat) {
+      throw new BadRequestException('outputFormat is required');
+    }
+
+    const userId = this.getUserId(req, sessionId);
+
+    // Parse options if provided
+    let options: Record<string, unknown> = {};
+    if (optionsStr) {
+      try {
+        options = typeof optionsStr === 'string' ? JSON.parse(optionsStr) : optionsStr;
+      } catch {
+        options = {};
+      }
+    }
+
+    // 1. Upload the file directly
+    const uploadedFile = await this.uploadService.uploadDirect(userId, file);
+    const fileId = uploadedFile.id;
+
+    // 2. Trigger the conversion
+    const conversionResult = await this.conversionService.createConversion(
+      userId,
+      fileId,
+      outputFormat.toUpperCase(),
+      options,
+    );
+    const jobId = conversionResult.id;
+
+    // 3. Poll database for job status
+    let completedJob: any = null;
+    const maxAttempts = 60; // 30 seconds max (60 * 500ms)
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const job = await this.conversionService.getConversion(jobId, userId);
+      if (job.status === 'COMPLETED') {
+        completedJob = job;
+        break;
+      }
+      if (job.status === 'FAILED') {
+        throw new BadRequestException(`Conversion failed: ${job.error || 'Unknown error'}`);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    if (!completedJob) {
+      throw new RequestTimeoutException('Conversion timed out');
+    }
+
+    // 4. Download output file buffer and stream it back
+    const buffer = await this.storageService.download(completedJob.outputPath);
+    const outputFilename = completedJob.outputPath.split('/').pop() || `converted_${jobId}`;
+
+    res.set({
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${outputFilename}"`,
+      'Content-Length': buffer.length,
+    });
+    res.send(buffer);
   }
 
   @Get('formats')

@@ -125,6 +125,24 @@ export class DeveloperController {
           }
         },
         {
+          name: 'Direct Synchronous Conversion',
+          method: 'POST',
+          path: '/convert/sync',
+          description: 'Upload a file and convert it in a single synchronous call. The converted output file is returned directly as the HTTP response payload.',
+          headers: {
+            'X-API-Key': 'Required. Your secret developer API key.'
+          },
+          bodyType: 'multipart/form-data',
+          body: {
+            file: 'Required. Binary. The file content to convert.',
+            outputFormat: 'Required. String. Target output format (e.g. "PDF", "PNG", "HTML").',
+            options: 'Optional. String. JSON string representation of custom converter options (quality, width, trimStart, etc.).'
+          },
+          response: {
+            description: 'Binary stream representation of the converted output file content.'
+          }
+        },
+        {
           name: 'Trigger Conversion Job',
           method: 'POST',
           path: '/convert',
